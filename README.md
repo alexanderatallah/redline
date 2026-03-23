@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="logo.jpeg" alt="redline" width="400">
+</p>
+
 # redline
 
 Automatic code review for Claude Code, powered by Codex via OpenRouter.
