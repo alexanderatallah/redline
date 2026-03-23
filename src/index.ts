@@ -1,75 +1,199 @@
 #!/usr/bin/env bun
 
-import { parseArgs } from "node:util";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { loadConfig } from "./lib/config-store";
 import { login } from "./lib/auth";
+import { ensureCodexConfig } from "./lib/env";
+import { AGENTS, isAgentName, isAgentInstalled, type AgentName } from "./lib/agents";
+import {
+  ensureVigilDirs,
+  ensureVigilIgnored,
+  readWatcherPid,
+  cleanupWatcherPid,
+  isProcessAlive,
+  generateProtocolInstructions,
+  injectAgentsMd,
+  restoreAgentsMd,
+} from "./lib/protocol";
 import { log, bold } from "./lib/prompts";
 
-const VERSION = "0.1.0";
+const VERSION = "0.2.0";
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const HELP = `
-${bold("agentmux")} — CLI for multiplexing Claude Code + Codex via OpenRouter
+${bold("vigil")} — background cross-review for AI coding agents
 
 ${bold("Usage:")}
-  agentmux [command] [options]
-
-${bold("Commands:")}
-  run          Run the multiplexer workflow (default)
-  login        Authenticate with OpenRouter via OAuth
-  config       Show/set configuration
-  cleanup      Remove agentmux worktrees and tmux sessions
+  vigil claude [args...]    Run Claude Code with background Codex review
+  vigil codex [args...]     Run Codex CLI with background Claude review
+  vigil login               Authenticate with OpenRouter via OAuth
+  vigil config [args...]    Show/set configuration
 
 ${bold("Options:")}
-  --task, -t   Task description (skips interactive prompt)
-  --force, -f  Skip confirmation prompts (cleanup)
-  --help, -h   Show this help
-  --version    Show version
+  --help, -h     Show this help
+  --version      Show version
+
+${bold("Examples:")}
+  vigil claude --dangerously-skip-permissions
+  vigil claude -p "one-shot task"
+  vigil codex --full-auto
 `;
 
 async function resolveApiKey(): Promise<string> {
-  // 1. Environment variable
   const envKey = process.env.OPENROUTER_API_KEY;
-  if (envKey) {
-    log.info("Using API key from OPENROUTER_API_KEY env var");
-    return envKey;
-  }
+  if (envKey) return envKey;
 
-  // 2. Config store
   const config = await loadConfig();
-  if (config.openrouter_api_key) {
-    log.info("Using API key from config");
-    return config.openrouter_api_key;
-  }
+  if (config.openrouter_api_key) return config.openrouter_api_key;
 
-  // 3. OAuth flow
   log.info("No API key found. Starting OAuth login...");
   const { key } = await login();
   return key;
 }
 
-async function main() {
-  const { values, positionals } = parseArgs({
-    args: Bun.argv.slice(2),
-    options: {
-      help: { type: "boolean", short: "h" },
-      version: { type: "boolean" },
-      task: { type: "string", short: "t" },
-      force: { type: "boolean", short: "f" },
-    },
-    allowPositionals: true,
+// --- Cleanup state ---
+let watcherProc: ReturnType<typeof Bun.spawn> | null = null;
+let agentsMdOriginal: string | null | undefined = undefined; // undefined = not touched
+let repoRoot: string = process.cwd();
+
+async function cleanup() {
+  if (watcherProc) {
+    try {
+      watcherProc.kill("SIGTERM");
+    } catch {
+      // already dead
+    }
+    watcherProc = null;
+  }
+  await cleanupWatcherPid(repoRoot);
+
+  if (agentsMdOriginal !== undefined) {
+    await restoreAgentsMd(repoRoot, agentsMdOriginal);
+    agentsMdOriginal = undefined;
+  }
+}
+
+async function runAgent(agentName: AgentName, userArgs: string[]): Promise<never> {
+  repoRoot = process.cwd();
+  const agent = AGENTS[agentName];
+  const opposite = AGENTS[agent.opposite];
+
+  // Resolve API key
+  const apiKey = await resolveApiKey();
+
+  // Check main agent is installed
+  if (!isAgentInstalled(agentName)) {
+    log.error(`'${agentName}' is not installed or not on PATH.`);
+    process.exit(1);
+  }
+
+  // Check opposite agent
+  const hasOpposite = isAgentInstalled(agent.opposite);
+  if (!hasOpposite) {
+    log.warn(
+      `'${agent.opposite}' not found — running without background reviews.`,
+    );
+  }
+
+  // Ensure codex config if codex is involved (as main or reviewer)
+  if (agentName === "codex" || agent.opposite === "codex") {
+    await ensureCodexConfig();
+  }
+
+  // Set up .vigil/ directories
+  await ensureVigilDirs(repoRoot);
+  await ensureVigilIgnored(repoRoot);
+
+  // Spawn background watcher (if opposite agent available)
+  if (hasOpposite) {
+    // Check if a watcher is already running
+    const existingPid = readWatcherPid(repoRoot);
+    if (existingPid && isProcessAlive(existingPid)) {
+      log.info("Vigil watcher already running.");
+    } else {
+      const watcherPath = resolve(__dirname, "watcher.ts");
+      watcherProc = Bun.spawn(
+        [
+          "bun",
+          watcherPath,
+          "--review-agent", agent.opposite,
+          "--api-key", apiKey,
+          "--vigil-dir", resolve(repoRoot, ".vigil"),
+          "--repo-root", repoRoot,
+        ],
+        {
+          stdout: "ignore",
+          stderr: "ignore",
+        },
+      );
+      log.info(
+        `Background reviewer started (${opposite.displayName}, PID ${watcherProc.pid})`,
+      );
+    }
+  }
+
+  // Inject protocol instructions
+  const instructions = generateProtocolInstructions(agentName, agent.defaultModel);
+  let agentArgs: string[];
+
+  if (agentName === "claude") {
+    // Prepend --append-system-prompt to user's args
+    agentArgs = ["claude", "--append-system-prompt", instructions, ...userArgs];
+  } else {
+    // Write AGENTS.md with vigil instructions for Codex
+    agentsMdOriginal = await injectAgentsMd(repoRoot, instructions);
+    agentArgs = ["codex", ...userArgs];
+  }
+
+  // Build environment
+  const env = { ...process.env, ...agent.getEnv(apiKey) };
+
+  // Register cleanup handlers
+  process.on("SIGINT", async () => {
+    await cleanup();
+    process.exit(130);
+  });
+  process.on("SIGTERM", async () => {
+    await cleanup();
+    process.exit(143);
   });
 
-  if (values.help) {
+  // Spawn main agent with inherited stdio (user interacts directly)
+  log.info(`Starting ${agent.displayName}...`);
+  const agentProc = Bun.spawn(agentArgs, {
+    stdin: "inherit",
+    stdout: "inherit",
+    stderr: "inherit",
+    env,
+  });
+
+  const exitCode = await agentProc.exited;
+
+  // Cleanup
+  await cleanup();
+  process.exit(exitCode);
+}
+
+async function main() {
+  const args = Bun.argv.slice(2);
+
+  if (args.length === 0 || args[0] === "--help" || args[0] === "-h") {
     console.log(HELP);
     process.exit(0);
   }
 
-  if (values.version) {
-    console.log(`agentmux v${VERSION}`);
+  if (args[0] === "--version") {
+    console.log(`vigil v${VERSION}`);
     process.exit(0);
   }
 
-  const command = positionals[0] || "run";
+  const command = args[0];
+
+  if (isAgentName(command)) {
+    await runAgent(command, args.slice(1));
+    return; // unreachable — runAgent calls process.exit
+  }
 
   switch (command) {
     case "login": {
@@ -80,20 +204,7 @@ async function main() {
 
     case "config": {
       const { configCommand } = await import("./commands/config");
-      await configCommand(positionals.slice(1));
-      break;
-    }
-
-    case "cleanup": {
-      const { cleanupCommand } = await import("./commands/cleanup");
-      await cleanupCommand(!!values.force);
-      break;
-    }
-
-    case "run": {
-      const apiKey = await resolveApiKey();
-      const { runCommand } = await import("./commands/run");
-      await runCommand({ task: values.task, apiKey });
+      await configCommand(args.slice(1));
       break;
     }
 

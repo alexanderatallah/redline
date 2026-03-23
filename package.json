@@ -1,9 +1,9 @@
 {
-  "name": "agentmux",
-  "version": "0.1.0",
+  "name": "vigil",
+  "version": "0.2.0",
   "type": "module",
   "bin": {
-    "agentmux": "src/index.ts"
+    "vigil": "src/index.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",

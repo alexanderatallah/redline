@@ -39,7 +39,7 @@ export async function ensureCodexConfig(): Promise<void> {
   }
 
   const block = `
-# Added by agentmux
+# Added by vigil
 [model_providers.openrouter]
 name = "openrouter"
 base_url = "https://openrouter.ai/api/v1"

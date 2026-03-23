@@ -15,7 +15,7 @@ export async function configCommand(args: string[]): Promise<void> {
     const key = args[1] as keyof Config | undefined;
     const value = args[2];
     if (!key || !value) {
-      log.error("Usage: agentmux config set <key> <value>");
+      log.error("Usage: vigil config set <key> <value>");
       process.exit(1);
     }
     if (!ALLOWED_KEYS.includes(key)) {
@@ -39,7 +39,7 @@ export async function configCommand(args: string[]): Promise<void> {
   // Default: show config
   const config = await loadConfig();
   if (Object.keys(config).length === 0) {
-    log.info("No config set. Run `agentmux login` to authenticate.");
+    log.info("No config set. Run `vigil login` to authenticate.");
     return;
   }
   for (const [key, value] of Object.entries(config)) {

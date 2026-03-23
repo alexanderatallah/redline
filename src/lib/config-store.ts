@@ -8,7 +8,7 @@ export interface Config {
   default_review_agent?: string;
 }
 
-const CONFIG_DIR = join(homedir(), ".config", "agentmux");
+const CONFIG_DIR = join(homedir(), ".config", "vigil");
 const CONFIG_PATH = join(CONFIG_DIR, "config.json");
 
 export async function loadConfig(): Promise<Config> {

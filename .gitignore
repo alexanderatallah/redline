@@ -1,4 +1,4 @@
 node_modules/
-.worktrees/
+.vigil/
 dist/
 *.tsbuildinfo
