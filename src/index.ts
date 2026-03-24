@@ -4,26 +4,31 @@ import { loadConfig } from "./lib/config-store";
 import { login } from "./lib/auth";
 import { log, bold, green, dim, cyan } from "./lib/prompts";
 import { findProjectRoot, installHook, removeHook } from "./lib/hooks";
+import type { Reviewer } from "./lib/agents";
 
-const VERSION = "0.3.0";
+const VERSION = "0.4.0";
 
 const HELP = `
-${bold("redline")} — automatic code review for Claude Code via Codex
+${bold("redline")} — automatic code review for AI coding agents
 
 ${bold("Usage:")}
-  redline [model]             Enable Codex reviews (default: openai/gpt-5.4)
-  redline off                 Disable reviews (remove hook)
-  redline review [model]      Run a single review manually
-  redline login               Authenticate with OpenRouter
+  redline [options] [model]        Enable reviews (default reviewer: codex)
+  redline off [options]            Disable reviews
+  redline review [options] [model] Run a single review manually
+  redline login                    Authenticate with OpenRouter
 
 ${bold("Options:")}
-  --help, -h     Show this help
-  --version      Show version
+  --reviewer=codex     Use Codex to review Claude Code (default)
+  --reviewer=claude    Use Claude Code to review Codex
+  --help, -h           Show this help
+  --version            Show version
 
 ${bold("Examples:")}
-  redline                     # enable with default model
-  redline openai/gpt-5.4-pro  # enable with custom model
-  redline off                 # disable
+  redline                          # Codex reviews Claude (default)
+  redline --reviewer=claude        # Claude reviews Codex
+  redline openai/gpt-5.4-pro       # custom Codex model
+  redline --reviewer=claude anthropic/claude-sonnet-4-6
+  redline off                      # disable
 `;
 
 async function resolveApiKey(): Promise<string> {
@@ -38,7 +43,27 @@ async function resolveApiKey(): Promise<string> {
   return key;
 }
 
-async function enableReviews(model?: string): Promise<void> {
+/** Extract --reviewer=X from args, return [reviewer, remaining args]. */
+function parseReviewer(args: string[]): { reviewer: Reviewer; rest: string[] } {
+  let reviewer: Reviewer = "codex";
+  const rest: string[] = [];
+  for (const arg of args) {
+    if (arg.startsWith("--reviewer=")) {
+      const val = arg.split("=")[1];
+      if (val === "claude" || val === "codex") {
+        reviewer = val;
+      } else {
+        log.error(`Invalid reviewer: ${val}. Use 'codex' or 'claude'.`);
+        process.exit(1);
+      }
+    } else {
+      rest.push(arg);
+    }
+  }
+  return { reviewer, rest };
+}
+
+async function enableReviews(reviewer: Reviewer, model?: string): Promise<void> {
   await resolveApiKey();
 
   const root = findProjectRoot();
@@ -47,11 +72,15 @@ async function enableReviews(model?: string): Promise<void> {
     process.exit(1);
   }
 
-  const { installed, updated } = await installHook(root, model);
+  const { installed, updated } = await installHook(root, reviewer, model);
 
-  const displayModel = model || "openai/gpt-5.4";
+  const defaultModel = reviewer === "claude" ? "anthropic/claude-sonnet-4-6" : "openai/gpt-5.4";
+  const displayModel = model || defaultModel;
+  const mainAgent = reviewer === "codex" ? "Claude Code" : "Codex";
+  const reviewAgent = reviewer === "codex" ? "Codex" : "Claude Code";
+
   if (!installed && !updated) {
-    log.info(`Redline hook already installed (${displayModel}).`);
+    log.info(`Redline hook already installed (${reviewAgent} → ${displayModel}).`);
   } else if (updated) {
     log.success(`Redline hook updated → ${cyan(displayModel)}`);
   } else {
@@ -59,21 +88,25 @@ async function enableReviews(model?: string): Promise<void> {
   }
 
   console.log();
-  console.log(`  ${dim("Location:")} .claude/settings.local.json`);
-  console.log(`  ${dim("Trigger:")}  Claude Code Stop event`);
-  console.log(`  ${dim("Action:")}   Async background codex review when changes detected`);
+  console.log(`  ${dim("Main agent:")}  ${mainAgent}`);
+  console.log(`  ${dim("Reviewer:")}    ${reviewAgent} (${displayModel})`);
+  if (reviewer === "codex") {
+    console.log(`  ${dim("Hook:")}        .claude/settings.local.json (Stop)`);
+  } else {
+    console.log(`  ${dim("Hook:")}        ~/.codex/config.toml (session_start)`);
+  }
   console.log();
-  console.log(`  Run ${green("redline off")} to disable.`);
+  console.log(`  Run ${green(reviewer === "codex" ? "redline off" : "redline off --reviewer=claude")} to disable.`);
 }
 
-async function disableReviews(): Promise<void> {
+async function disableReviews(reviewer: Reviewer): Promise<void> {
   const root = findProjectRoot();
   if (!root) {
     log.error("Not inside a git repository.");
     process.exit(1);
   }
 
-  const removed = await removeHook(root);
+  const removed = await removeHook(root, reviewer);
   if (removed) {
     log.success("Redline hook removed.");
   } else {
@@ -82,41 +115,49 @@ async function disableReviews(): Promise<void> {
 }
 
 async function main() {
-  const args = Bun.argv.slice(2);
+  const rawArgs = Bun.argv.slice(2);
 
-  if (args.length === 0) {
-    await enableReviews();
+  if (rawArgs.length === 0) {
+    await enableReviews("codex");
     return;
   }
 
-  if (args[0] === "--help" || args[0] === "-h") {
+  if (rawArgs[0] === "--help" || rawArgs[0] === "-h") {
     console.log(HELP);
     return;
   }
 
-  if (args[0] === "--version") {
+  if (rawArgs[0] === "--version") {
     console.log(`redline v${VERSION}`);
     return;
   }
 
-  switch (args[0]) {
+  const { reviewer, rest } = parseReviewer(rawArgs);
+
+  const command = rest[0];
+
+  if (!command) {
+    // Just --reviewer=X with no other args
+    await enableReviews(reviewer);
+    return;
+  }
+
+  switch (command) {
     case "off": {
-      await disableReviews();
+      await disableReviews(reviewer);
       break;
     }
 
     case "check": {
-      // Called by the Stop hook — fast diff gate
       const { checkCommand } = await import("./commands/check");
-      checkCommand(args[1]); // optional model
+      checkCommand(reviewer, rest[1]); // optional model
       break;
     }
 
     case "review": {
       const apiKey = await resolveApiKey();
-      const model = args[1]; // optional model
       const { reviewCommand } = await import("./commands/review");
-      await reviewCommand({ model, apiKey });
+      await reviewCommand({ reviewer, model: rest[1], apiKey });
       break;
     }
 
@@ -128,7 +169,7 @@ async function main() {
 
     default: {
       // Treat as model slug → install hook
-      await enableReviews(args[0]);
+      await enableReviews(reviewer, command);
       break;
     }
   }

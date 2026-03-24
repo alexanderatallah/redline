@@ -4,26 +4,37 @@
 
 # redline
 
-Automatic code review for Claude Code, powered by Codex via OpenRouter.
+Automatic code review for AI coding agents, powered by OpenRouter.
 
-Run `redline` in any git repo to install a Claude Code hook. When Claude makes code changes, Codex automatically reviews them in the background — visible, killable, and async.
+Run `redline` in any git repo to enable automatic cross-reviews between Claude Code and Codex. When your main agent makes code changes, the other agent reviews them in the background.
 
 ## How it works
+
+**Default: Codex reviews Claude Code**
 
 ```
 Claude Code Stop hook (fast, <1s)
   → redline check
-  → any uncommitted changes? review already pending?
+  → any uncommitted changes? (deduplicated by diff hash)
   → if changes detected:
-      tells Claude to run `redline review` as a background task
-      Claude spawns it → visible in background tasks, killable
-      Codex reviews uncommitted changes
+      tells Claude to run `codex exec review --uncommitted` as a background task
+      visible in background tasks, killable, streams output
       Claude reads the results and presents findings
-  → if no changes or review pending:
-      exits silently, Claude proceeds normally
+  → if no changes:
+      exits silently
 ```
 
-Reviews are **async** — Claude keeps working while Codex reviews in the background. No blocking, no waiting.
+**Reverse: Claude reviews Codex** (`--reviewer=claude`)
+
+```
+Codex SessionStart hook
+  → redline check --reviewer=claude
+  → injects review protocol instructions into Codex's context
+  → Codex runs `claude -p "Review uncommitted changes..."` as a background task
+      after making substantial changes
+```
+
+Reviews are **async** — your main agent keeps working while the reviewer runs in the background.
 
 ## Setup
 
@@ -38,7 +49,7 @@ bun link
 
 ### Authentication
 
-All inference is routed through [OpenRouter](https://openrouter.ai). Authenticate with one of:
+All inference is routed through [OpenRouter](https://openrouter.ai):
 
 ```bash
 # Option 1: OAuth (opens browser)
@@ -52,57 +63,67 @@ export OPENROUTER_API_KEY=sk-or-...
 
 ```bash
 cd your-project
-redline              # installs the hook, done
-# now use Claude Code normally — reviews happen automatically in the background
+
+# Codex reviews Claude Code (default)
+redline
+
+# Claude Code reviews Codex
+redline --reviewer=claude
 ```
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
-| `redline` | Enable reviews with the default model (`openai/gpt-5.4`) |
-| `redline <model>` | Enable reviews with a custom model (any OpenRouter slug) |
-| `redline off` | Disable reviews (remove the hook) |
-| `redline review [model]` | Run a single review manually |
-| `redline login` | Authenticate with OpenRouter via OAuth |
-
-### Internal commands (called by hook, not by users)
-
-| Command | Description |
-|---------|-------------|
-| `redline check [model]` | Fast diff gate — checks for uncommitted changes, outputs hook JSON |
+| `redline` | Enable reviews — Codex reviews Claude Code (default) |
+| `redline --reviewer=claude` | Enable reviews — Claude Code reviews Codex |
+| `redline [model]` | Enable with a custom reviewer model |
+| `redline off` | Disable reviews |
+| `redline off --reviewer=claude` | Disable Claude-reviews-Codex mode |
+| `redline review [model]` | Run a Codex review manually |
+| `redline review --reviewer=claude [model]` | Run a Claude review manually |
+| `redline login` | Authenticate with OpenRouter |
 
 ### Model customization
 
-The default review model is `openai/gpt-5.4`. Pass any [OpenRouter model slug](https://openrouter.ai/models) to customize:
+Pass any [OpenRouter model slug](https://openrouter.ai/models) to customize the reviewer:
 
 ```bash
-redline openai/gpt-5.4-pro       # use GPT-5.4 Pro
-redline google/gemini-2.5-pro     # use Gemini
+# Custom Codex reviewer model
+redline openai/gpt-5.4-pro
+
+# Custom Claude reviewer model
+redline --reviewer=claude anthropic/claude-opus-4-6
 ```
 
-## Why Claude Code only?
+## Loop prevention
 
-Codex CLI's hook system can't feed output back into the agent's context. Claude Code's `Stop` hook supports a `decision: "block"` response with a `reason` field that gets injected directly into Claude's conversation — this is what lets Claude read the review instructions and spawn the background task.
+If both hooks are installed (Codex reviewing Claude AND Claude reviewing Codex), redline prevents infinite review loops by setting `REDLINE_REVIEWING=1` in the environment when spawning review agents. The check command exits silently when this env var is set.
 
-When Codex adds support for feeding hook output back to the agent, redline will support it as the main agent too.
+## How each hook works
 
-## How the async review works
+### Codex reviews Claude Code (default)
 
-1. Claude finishes a response → Stop hook fires `redline check`
-2. `redline check` runs `git status --porcelain` (<1s) and checks for a pending review marker
-3. If changes exist and no review is pending, it tells Claude to run `redline review` in the background
-4. Claude spawns `redline review` as a background task (visible in Claude's task list, killable)
-5. Codex reviews all uncommitted changes via `codex exec review --uncommitted`
-6. When done, Claude reads the output and presents findings to the user
-7. The pending marker is cleared, so the next Stop event can trigger a new review if needed
+- Installs a **Stop hook** in `.claude/settings.local.json`
+- Fires after every Claude response, checks for uncommitted changes
+- Uses `decision: "block"` to inject the review command into Claude's context
+- Claude decides whether changes warrant a review and spawns it in the background
+- Deduplicates via diff hash (`.git/redline-last-diff`)
+
+### Claude reviews Codex (`--reviewer=claude`)
+
+- Installs a **session_start hook** in `~/.codex/config.toml`
+- Fires once at the start of each Codex session
+- Injects review protocol instructions into Codex's context
+- Codex follows the protocol to run Claude reviews after significant changes
+- No deduplication needed (fires once per session)
 
 ## Requirements
 
 - [Bun](https://bun.sh) runtime
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) (main agent)
-- [Codex CLI](https://github.com/openai/codex) (reviewer)
-- [OpenRouter](https://openrouter.ai) account (free to sign up, pay-per-use)
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
+- [Codex CLI](https://github.com/openai/codex)
+- [OpenRouter](https://openrouter.ai) account
 
 ## License
 

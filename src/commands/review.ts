@@ -1,18 +1,31 @@
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { unlinkSync } from "node:fs";
-import { isCodexInstalled, buildReviewArgs, getCodexEnv } from "../lib/agents";
+import type { Reviewer } from "../lib/agents";
+import {
+  isCodexInstalled, buildCodexReviewArgs, getCodexEnv,
+  isClaudeInstalled, buildClaudeReviewArgs, getClaudeEnv,
+} from "../lib/agents";
 import { ensureCodexConfig } from "../lib/env";
 import { log } from "../lib/prompts";
 
 interface ReviewOptions {
+  reviewer: Reviewer;
   model?: string;
   apiKey: string;
 }
 
 export async function reviewCommand(opts: ReviewOptions): Promise<void> {
-  const { apiKey, model } = opts;
+  const { apiKey, model, reviewer } = opts;
 
+  if (reviewer === "codex") {
+    await runCodexReview(apiKey, model);
+  } else {
+    await runClaudeReview(apiKey, model);
+  }
+}
+
+async function runCodexReview(apiKey: string, model?: string): Promise<void> {
   if (!isCodexInstalled()) {
     log.error("codex CLI is not installed or not on PATH.");
     process.exit(1);
@@ -21,10 +34,13 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
   await ensureCodexConfig();
 
   const outputFile = join(tmpdir(), `redline-review-${Date.now()}.txt`);
-  const args = buildReviewArgs(outputFile, model);
-  const env = { ...process.env, ...getCodexEnv(apiKey) };
+  const args = buildCodexReviewArgs(outputFile, model);
+  const env = {
+    ...process.env,
+    ...getCodexEnv(apiKey),
+    REDLINE_REVIEWING: "1",
+  };
 
-  // Stream codex output in real-time so background task shows progress
   const proc = Bun.spawn(args, {
     cwd: process.cwd(),
     env,
@@ -34,13 +50,12 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
 
   const exitCode = await proc.exited;
 
-  // Read the final review from the -o output file
   let review = "";
   try {
     review = (await Bun.file(outputFile).text()).trim();
     try { unlinkSync(outputFile); } catch { /* ignore */ }
   } catch {
-    // No output file — codex output was already streamed to stdout
+    // output was already streamed
   }
 
   if (exitCode !== 0 && !review) {
@@ -48,9 +63,36 @@ export async function reviewCommand(opts: ReviewOptions): Promise<void> {
     process.exit(1);
   }
 
-  // Print the captured review summary (codex streaming output already shown above)
   if (review) {
     console.log("\n--- Review Summary ---\n");
     console.log(review);
+  }
+}
+
+async function runClaudeReview(apiKey: string, model?: string): Promise<void> {
+  if (!isClaudeInstalled()) {
+    log.error("claude CLI is not installed or not on PATH.");
+    process.exit(1);
+  }
+
+  const args = buildClaudeReviewArgs(model);
+  const env = {
+    ...process.env,
+    ...getClaudeEnv(apiKey),
+    REDLINE_REVIEWING: "1",
+  };
+
+  const proc = Bun.spawn(args, {
+    cwd: process.cwd(),
+    env,
+    stdout: "inherit",
+    stderr: "inherit",
+  });
+
+  const exitCode = await proc.exited;
+
+  if (exitCode !== 0) {
+    log.error(`Claude review failed (exit ${exitCode}).`);
+    process.exit(1);
   }
 }
