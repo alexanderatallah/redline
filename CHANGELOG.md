@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.4.0
+
+- **Skill-based reviews** — `redline` now installs a `/redline` skill (`.claude/commands/redline.md`) that defines how to run the review. Customizable: edit the file below the first line to add focus areas, ignore patterns, or output preferences.
+- **Project-local skill** — skill file is per-repo (not global), so different projects can have different review settings
+- **Hook scope choice** — choose "just me" (`.claude/settings.local.json`, gitignored) or "whole team" (`.claude/settings.json`, committed)
+- **Loop prevention** — Stop hook reads `stop_hook_active` from event JSON to prevent infinite review loops
+- **Diff-hash dedup restored** — Stop hook only fires when uncommitted changes differ from the last review trigger (`.git/redline-last-diff`)
+- **Scope switch cleanup** — installing to a new scope automatically removes the hook from the opposite scope
+- **`redline off` removes both scopes** — cleans up hooks from both settings files
+- **Legacy hook migration** — old command/prompt hooks auto-upgrade to current format
+
 ## 0.3.0
 
 - **Interactive setup** — `redline` now prompts for model, reasoning effort, and provider variant (nitro/floor/standard)

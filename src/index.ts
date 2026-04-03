@@ -3,14 +3,15 @@
 import { loadConfig } from "./lib/config-store";
 import { login } from "./lib/auth";
 import { log, bold, green, dim, cyan, ask, choose } from "./lib/prompts";
-import { findProjectRoot, installHook, removeHook } from "./lib/hooks";
+import { findProjectRoot, installHook, removeHook, type HookScope } from "./lib/hooks";
+import { installSkill, gitignoreSkill } from "./lib/skill";
 import {
   DEFAULT_MODEL, DEFAULT_EFFORT, EFFORT_OPTIONS, VARIANT_OPTIONS,
   DEFAULT_VARIANT_IDX, applyVariant,
   type Effort, type Variant,
 } from "./lib/agents";
 
-const VERSION = "0.3.0";
+const VERSION = "0.4.0";
 
 const HELP = `
 ${bold("redline")} — automatic code review for Claude Code via Codex
@@ -44,7 +45,6 @@ async function resolveApiKey(): Promise<string> {
   return key;
 }
 
-/** Parse --effort=X and --key=value flags from args. */
 function parseFlags(args: string[]): { effort?: string; rest: string[] } {
   let effort: string | undefined;
   const rest: string[] = [];
@@ -69,10 +69,8 @@ async function enableReviews(modelArg?: string, effortArg?: string): Promise<voi
 
   console.log();
 
-  // Prompt for model (skip if provided as arg)
   const model = modelArg || await ask("  Model", DEFAULT_MODEL);
 
-  // Prompt for reasoning effort (skip if provided via --effort flag)
   let effort: string;
   if (effortArg && EFFORT_OPTIONS.includes(effortArg as Effort)) {
     effort = effortArg;
@@ -85,7 +83,6 @@ async function enableReviews(modelArg?: string, effortArg?: string): Promise<voi
     effort = EFFORT_OPTIONS[effortIdx];
   }
 
-  // Prompt for provider variant
   const variantIdx = await choose(
     "  Provider",
     [...VARIANT_OPTIONS],
@@ -93,26 +90,39 @@ async function enableReviews(modelArg?: string, effortArg?: string): Promise<voi
   );
   const variant = VARIANT_OPTIONS[variantIdx] as Variant;
 
-  // Build final model slug with variant
+  // Prompt for hook scope
+  const scopeIdx = await choose(
+    "  Hook scope",
+    ["just me (local, not committed)", "whole team (committed to repo)"],
+    0,
+  );
+  const scope: HookScope = scopeIdx === 0 ? "local" : "shared";
+
   const finalModel = applyVariant(model, variant);
 
   console.log();
 
-  const { installed, updated } = await installHook(root, finalModel, effort);
+  const skillResult = await installSkill(root, finalModel, effort);
+  const hookResult = await installHook(root, scope);
 
-  const display = `${cyan(finalModel)} ${dim(`(${effort} effort)`)}`;
-  if (!installed && !updated) {
-    log.info(`Redline hook already installed → ${display}`);
-  } else if (updated) {
-    log.success(`Redline hook updated → ${display}`);
-  } else {
-    log.success(`Redline hook installed → ${display}`);
+  // Gitignore both skill and hook settings if local (not shared)
+  if (scope === "local") {
+    await gitignoreSkill(root);
   }
 
+  const display = `${cyan(finalModel)} ${dim(`(${effort} effort)`)}`;
+  if (!skillResult.created && !skillResult.updated && !hookResult.installed && !hookResult.updated) {
+    log.info(`Redline already installed → ${display}`);
+  } else {
+    log.success(`Redline ${skillResult.updated || hookResult.updated ? "updated" : "installed"} → ${display}`);
+  }
+
+  const settingsFile = scope === "shared" ? ".claude/settings.json" : ".claude/settings.local.json";
+
   console.log();
-  console.log(`  ${dim("Location:")} .claude/settings.local.json`);
-  console.log(`  ${dim("Trigger:")}  Claude Code Stop event`);
-  console.log(`  ${dim("Action:")}   Async background codex review when changes detected`);
+  console.log(`  ${dim("Skill:")}  .claude/commands/redline.md`);
+  console.log(`  ${dim("Hook:")}   ${settingsFile}`);
+  console.log(`  ${dim("Invoke:")} /redline`);
   console.log();
   console.log(`  Run ${green("redline off")} to disable.`);
 }
@@ -127,6 +137,7 @@ async function disableReviews(): Promise<void> {
   const removed = await removeHook(root);
   if (removed) {
     log.success("Redline hook removed.");
+    log.info("Skill file preserved at .claude/commands/redline.md (invoke manually with /redline).");
   } else {
     log.info("No redline hook found.");
   }
@@ -158,12 +169,9 @@ async function main() {
     }
 
     case "check": {
-      // Called by the Stop hook: redline check [model] [--effort=X]
+      // Called by the Stop hook — reads event JSON from stdin
       const { checkCommand } = await import("./commands/check");
-      // Model is the first non-flag arg after "check"
-      const checkArgs = rest.slice(1);
-      const { effort: checkEffort, rest: checkRest } = parseFlags(checkArgs);
-      checkCommand(checkRest[0], checkEffort || effort);
+      await checkCommand();
       break;
     }
 
@@ -187,7 +195,6 @@ async function main() {
     }
 
     default: {
-      // Treat as model slug → install hook with prompts for effort/variant
       await enableReviews(rest[0], effort);
       break;
     }
