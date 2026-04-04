@@ -8,9 +8,9 @@ Run the Redline setup wizard.
 
 Run `codex login status` to check if Codex is already authenticated with OpenAI.
 
-- If authenticated: ask the user — "Use your existing OpenAI subscription, or route through OpenRouter (lets you choose from any model)?"
+- If authenticated: ask the user — "Use your OpenRouter account, or your OpenAI subscription?"
+  - **OpenRouter** (Recommended) → set provider to `openrouter`, continue to Step 2.
   - **OpenAI subscription** → set provider to `openai`. Skip Steps 2–5 (Codex uses its default model). Save and finish.
-  - **OpenRouter** → set provider to `openrouter`, continue to Step 2.
 - If not authenticated: set provider to `openrouter`, continue to Step 2.
 
 ## Step 2: OpenRouter API key
