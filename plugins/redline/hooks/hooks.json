@@ -6,8 +6,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node -e \"let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{if(JSON.parse(d).stop_hook_active)process.exit(0)}catch{}console.log(JSON.stringify({decision:'block',reason:'Consider /redline:... commands'}))})\"",
-            "timeout": 5
+            "command": "node -e \"let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{if(JSON.parse(d).stop_hook_active)process.exit(0)}catch{}try{const s=require('child_process').execSync('git diff --stat HEAD',{encoding:'utf-8'}).trim();if(!s)process.exit(0);console.log(JSON.stringify({decision:'block',reason:'Consider running a /redline:... command'}))}catch{process.exit(0)}})\"",
+            "timeout": 10
           }
         ]
       }

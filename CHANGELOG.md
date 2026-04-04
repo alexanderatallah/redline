@@ -5,10 +5,13 @@
 - **Claude Code plugin** — complete rewrite as a native plugin, installable via marketplace
 - **Three commands** — `/redline:review` (standard), `/redline:adversarial` (devil's advocate), `/redline:rescue` (delegate to Codex)
 - **The model decides** — Stop hook presents available commands; Claude picks the most helpful action based on context
-- **`/redline:setup`** — interactive configuration + optional OpenRouter OAuth login
+- **`/redline:setup`** — interactive setup wizard with provider detection, model selection, effort, and routing variant
+- **Dual provider support** — works with existing OpenAI subscription (via `codex login`) or OpenRouter for access to any model
+- **Constrained model choices** — setup offers `openai/gpt-5.4`, `openrouter/auto`, or any custom OpenRouter slug
+- **Smart Stop hook** — only fires when there are uncommitted git changes; checks `stop_hook_active` to prevent loops
+- **Persistent context via skill description** — review decision instructions live in a non-user-invocable skill (`check.md`) always in Claude's context
 - **No external binary** — all scripts bundled in the plugin
-- **Minimal Stop hook** — replaced verbose `check.mjs` with a one-line command hook that just nudges Claude to consider `/redline:...` commands; `stop_hook_active` prevents loops
-- **Persistent context via skill description** — review decision instructions live in a non-user-invocable skill (`check.md`) whose description is always in Claude's context, so the hook doesn't need to repeat them
+- **Customizable commands** — every command is plain markdown; edit to change review focus, persona, or behavior
 
 ## 0.4.0
 
