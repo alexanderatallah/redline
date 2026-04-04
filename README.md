@@ -4,9 +4,9 @@
 
 # redline
 
-A Claude Code plugin for **automatic** code review, adversarial review, and rescue delegation — powered by Codex through any model on [OpenRouter](https://openrouter.ai).
+A Claude Code plugin for **automatic** code review, adversarial review, and rescue delegation — powered by Codex.
 
-Use GPT, Claude, Gemini, DeepSeek, or any other model for reviews — not locked to a single provider.
+Works with your existing OpenAI subscription, or route through [OpenRouter](https://openrouter.ai) for access to any model (GPT, Claude, Gemini, DeepSeek, and more).
 
 ## The model decides
 
@@ -38,7 +38,7 @@ Reviews happen **automatically** — no manual invocation needed. You can also r
 /plugin install redline@alexanderatallah/redline
 ```
 
-Then run `/redline:setup` to configure your model and effort level.
+Then run `/redline:setup` to configure your provider, model, and effort level.
 
 ### Development
 
@@ -50,7 +50,7 @@ claude --plugin-dir ./plugins/redline
 
 | Command | Description |
 |---------|-------------|
-| `/redline:setup` | Configure OpenRouter API key, model, effort, and routing variant |
+| `/redline:setup` | Configure provider (OpenAI or OpenRouter), model, effort, and routing |
 | `/redline:review` | Run a standard code review on uncommitted changes |
 | `/redline:adversarial` | Challenge design decisions, probe assumptions, test failure modes |
 | `/redline:rescue <task>` | Delegate a task to Codex for help when stuck |
@@ -71,13 +71,18 @@ When you're stuck — hand the problem to Codex. Describe what you're working on
 
 During `/redline:setup`, configure:
 
-- **Model** — `openai/gpt-5.4` (default), `openrouter/auto`, or any [OpenRouter model slug](https://openrouter.ai/models)
-- **Effort** — reasoning effort: minimal, low, medium, high (default: medium)
-- **Provider variant** — `:nitro` (fastest, default), `:floor` (cheapest), or standard routing
+- **Provider** — use your existing OpenAI subscription, or route through OpenRouter for model choice
+- **Model** (OpenRouter only) — `openai/gpt-5.4` (default), `openrouter/auto`, or any [OpenRouter model slug](https://openrouter.ai/models)
+- **Effort** (OpenRouter only) — reasoning effort: minimal, low, medium, high (default: medium)
+- **Provider variant** (OpenRouter only) — `:nitro` (fastest, default), `:floor` (cheapest), or standard routing
 
 ## Authentication
 
-Redline routes all Codex inference through [OpenRouter](https://openrouter.ai), giving you access to any model. Set your API key via:
+Redline supports two authentication methods:
+
+**OpenAI subscription** — if Codex is already authenticated (`codex auth`), Redline can use it directly. No additional setup needed.
+
+**OpenRouter** — route through [OpenRouter](https://openrouter.ai) for access to any model. Set your API key via:
 
 ```bash
 # Environment variable
@@ -103,7 +108,7 @@ Compared to other ways of reviewing Claude's code:
 
 | | Redline | Other plugins |
 |---|---|---|
-| **Models** | Any model via OpenRouter (GPT, Claude, Gemini, DeepSeek, ...) | Typically locked to one provider |
+| **Models** | OpenAI subscription or any model via OpenRouter | Typically locked to one provider |
 | **Automatic reviews** | Stop hook triggers automatically, model decides when to review | Manual invocation only |
 | **Customizable** | Edit plain markdown commands to change review behavior | Commands are often hardcoded or complex to modify |
 | **Simplicity** | ~13 files, no build step | Often 30+ files across scripts, agents, and configs |
@@ -112,7 +117,7 @@ Compared to other ways of reviewing Claude's code:
 
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
 - [Codex CLI](https://github.com/openai/codex)
-- [OpenRouter](https://openrouter.ai) account
+- OpenAI subscription (via `codex auth`) **or** [OpenRouter](https://openrouter.ai) account
 
 ## License
 

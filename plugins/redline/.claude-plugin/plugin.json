@@ -1,7 +1,7 @@
 {
   "name": "redline",
   "version": "0.5.0",
-  "description": "Automatic code review, adversarial review, and rescue via Codex through OpenRouter.",
+  "description": "Automatic code review, adversarial review, and rescue via Codex.",
   "author": { "name": "Alex Atallah" },
   "userConfig": {
     "openrouter_api_key": {
@@ -18,9 +18,15 @@
     },
     "effort": {
       "title": "Reasoning effort",
-      "description": "Reasoning effort: minimal, low, medium, high (default: high)",
+      "description": "Reasoning effort: minimal, low, medium, high (default: medium)",
       "type": "string",
       "default": "medium"
+    },
+    "provider": {
+      "title": "Provider",
+      "description": "openai (use existing Codex auth) or openrouter (route through OpenRouter for model choice)",
+      "type": "string",
+      "default": "openrouter"
     }
   }
 }
