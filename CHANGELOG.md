@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.0
+
+- **Claude Code plugin** — complete rewrite as a native plugin, installable via marketplace
+- **Three commands** — `/redline:review` (standard), `/redline:adversarial` (devil's advocate), `/redline:rescue` (delegate to Codex)
+- **The model decides** — Stop hook presents available commands; Claude picks the most helpful action based on context
+- **`/redline:setup`** — interactive configuration + optional OpenRouter OAuth login
+- **No external binary** — all scripts bundled in the plugin
+- **Minimal Stop hook** — replaced verbose `check.mjs` with a one-line command hook that just nudges Claude to consider `/redline:...` commands; `stop_hook_active` prevents loops
+- **Persistent context via skill description** — review decision instructions live in a non-user-invocable skill (`check.md`) whose description is always in Claude's context, so the hook doesn't need to repeat them
+
 ## 0.4.0
 
 - **Skill-based reviews** — `redline` now installs a `/redline` skill (`.claude/commands/redline.md`) that defines how to run the review. Customizable: edit the file below the first line to add focus areas, ignore patterns, or output preferences.

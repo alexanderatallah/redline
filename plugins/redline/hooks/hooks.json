@@ -1,0 +1,16 @@
+{
+  "description": "Redline Stop hook — the model decides whether to review, challenge, or rescue",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{if(JSON.parse(d).stop_hook_active)process.exit(0)}catch{}console.log(JSON.stringify({decision:'block',reason:'Consider /redline:... commands'}))})\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

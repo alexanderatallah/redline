@@ -1,0 +1,17 @@
+{
+  "name": "redline",
+  "owner": { "name": "Alex Atallah" },
+  "metadata": {
+    "description": "Automatic code review for Claude Code — standard review, adversarial review, and rescue delegation via Codex and OpenRouter.",
+    "version": "0.5.0"
+  },
+  "plugins": [
+    {
+      "name": "redline",
+      "description": "Automatic code review, adversarial review, and rescue via Codex through OpenRouter.",
+      "version": "0.5.0",
+      "author": { "name": "Alex Atallah" },
+      "source": "./plugins/redline"
+    }
+  ]
+}
