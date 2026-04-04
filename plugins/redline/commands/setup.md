@@ -32,7 +32,12 @@ Only if provider is `openrouter`. Present EXACTLY these options — do not sugge
 
 ## Step 4: Effort
 
-Only if provider is `openrouter`. Ask for reasoning effort level: minimal, low, medium, or high (default: medium).
+Only if provider is `openrouter`. Present EXACTLY these options in this order:
+
+1. `medium` (Recommended) — good balance of speed and thoroughness
+2. `high` — most thorough, slowest
+3. `low` — quick reviews with basic analysis
+4. `minimal` — fastest, least thorough
 
 ## Step 5: Provider variant
 
