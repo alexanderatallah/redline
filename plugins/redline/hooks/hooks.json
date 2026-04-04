@@ -5,9 +5,8 @@
       {
         "hooks": [
           {
-            "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/check.mjs\"",
-            "timeout": 10
+            "type": "prompt",
+            "prompt": "Did the assistant just make code changes? If yes: {\"ok\": false, \"reason\": \"Redline\"}. If no: {\"ok\": true}."
           }
         ]
       }

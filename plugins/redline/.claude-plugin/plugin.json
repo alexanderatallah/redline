@@ -13,12 +13,14 @@
     "model": {
       "title": "Review model",
       "description": "Review model (default: openai/gpt-5.4)",
-      "type": "string"
+      "type": "string",
+      "default": "openai/gpt-5.4:nitro"
     },
     "effort": {
       "title": "Reasoning effort",
       "description": "Reasoning effort: minimal, low, medium, high (default: high)",
-      "type": "string"
+      "type": "string",
+      "default": "medium"
     }
   }
 }
