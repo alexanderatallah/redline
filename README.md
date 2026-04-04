@@ -87,6 +87,27 @@ export OPENROUTER_API_KEY=sk-or-...
 /redline:setup
 ```
 
+## Customization
+
+Every command is a plain markdown file in `commands/`. Edit them to fit your project:
+
+- **Focus the review** — add "pay special attention to SQL injection and auth boundaries" to `review.md`
+- **Change the adversarial persona** — make it focus on performance, security, or accessibility instead of general design
+- **Adjust rescue behavior** — tell Codex to always write tests, or to explain its reasoning step-by-step
+
+No scripts to modify, no config flags to learn. Just edit the markdown and `/reload-plugins`.
+
+## Why Redline?
+
+Compared to other ways of reviewing Claude's code:
+
+| | Redline | Other plugins |
+|---|---|---|
+| **Models** | Any model via OpenRouter (GPT, Claude, Gemini, DeepSeek, ...) | Typically locked to one provider |
+| **Automatic reviews** | Stop hook triggers automatically, model decides when to review | Manual invocation only |
+| **Customizable** | Edit plain markdown commands to change review behavior | Commands are often hardcoded or complex to modify |
+| **Simplicity** | ~13 files, no build step | Often 30+ files across scripts, agents, and configs |
+
 ## Requirements
 
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
