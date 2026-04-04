@@ -73,22 +73,21 @@ During `/redline:setup`, configure:
 
 ## Authentication
 
-Codex uses your local OpenAI credentials by default. If you'd like to route through [OpenRouter](https://openrouter.ai) instead (for access to other models or provider variants), you can:
+Redline routes all Codex inference through [OpenRouter](https://openrouter.ai), giving you access to any model. Set your API key via:
 
 ```bash
-# Set an OpenRouter API key in your environment
+# Environment variable
 export OPENROUTER_API_KEY=sk-or-...
 
 # Or run OAuth login during setup
 /redline:setup
 ```
 
-OpenRouter is optional — Codex works out of the box with a local OpenAI key.
-
 ## Requirements
 
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
 - [Codex CLI](https://github.com/openai/codex)
+- [OpenRouter](https://openrouter.ai) account
 
 ## License
 
