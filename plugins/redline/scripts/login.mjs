@@ -9,6 +9,7 @@ import { createServer } from "node:http";
 import { execSync } from "node:child_process";
 import { writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
+import { loadConfig, saveConfig } from "./lib/config.mjs";
 
 async function generatePKCE() {
   const array = new Uint8Array(32);
@@ -92,8 +93,14 @@ async function login() {
   const masked = key.length > 10 ? key.slice(0, 6) + "..." + key.slice(-4) : "****";
 
   console.log(`\nAuthenticated! Key: ${masked}`);
-  console.log(`\nSet this in your environment:\n  export OPENROUTER_API_KEY="${key}"\n`);
-  console.log(`Or configure it in the plugin settings with /redline:setup`);
+
+  if (process.env.CLAUDE_PLUGIN_DATA) {
+    const config = { ...loadConfig(), openrouter_api_key: key };
+    saveConfig(config);
+    console.log(`Key saved to plugin config.`);
+  } else {
+    console.log(`\nSet this in your environment:\n  export OPENROUTER_API_KEY="${key}"\n`);
+  }
 
   return { key, user_id: data.user_id };
 }

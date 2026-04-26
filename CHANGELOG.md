@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.0
+
+- **Config is actually respected** — `/redline:review`, `/redline:adversarial`, and `/redline:rescue` now route through `scripts/exec.mjs`, which reads the user's provider/model/effort/API-key from the plugin data store. Previously they used `${user_config.*}` template placeholders that weren't writable from `/redline:setup` (only the `/plugin` UI), so setup answers were silently lost and `codex exec` ran with defaults or an empty API key.
+- **`/redline:setup` persists via `scripts/config.mjs`** — no more ambiguity about where setup answers go. `scripts/login.mjs` auto-saves the OAuth API key to the same store.
+- **Precedence: stored config > plugin-UI env vars > defaults** — if a user set values via the `/plugin` UI and then ran `/redline:setup`, setup now wins (the most recent explicit action). Previously UI env vars beat stored config and re-created the same "setup answers ignored" bug.
+- **`config.mjs get` returns effective values** — `get openrouter_api_key` now follows the same resolution path as runtime (`OPENROUTER_API_KEY` env > plugin-UI env > stored). Previously it only read `config.json`, so `/redline:setup` would incorrectly prompt for a second OAuth login when a key was already present via the plugin UI. `show` still returns raw `config.json` for debugging.
+- **`check.md` selection guidelines** — adds signals for when to pick `redline:adversarial` (architecture pressure-test) or `redline:rescue` (stuck / going in circles) instead of the default `redline:review`.
+- **Fix skill-vs-agent confusion in `check.md`** — the old wording ("run it as a **background** Agent task") caused Claude to dispatch a nonexistent `redline:code-reviewer` subagent. Now explicitly names the Skill tool and warns against Agent dispatch. Stop-hook reason updated to match.
+
 ## 0.5.2
 
 - **Review any diff** — `/redline:review` and `/redline:adversarial` now accept arguments to control what gets reviewed: `last 3 commits`, `against main`, `commit abc123`, or raw Codex flags (`--base`, `--commit`). Defaults to `--uncommitted` when no arguments are given.
