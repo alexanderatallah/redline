@@ -4,14 +4,14 @@ allowed-tools: Bash
 ---
 Run a Codex code review as a background task.
 
-## Determine the diff source
+## Determine the diff flag
 
 Parse `$ARGUMENTS` to decide what to review. If no arguments are provided, default to `--uncommitted`.
 
 | User says | Codex flag |
 |---|---|
 | *(nothing)* | `--uncommitted` |
-| `last N commits` or `N commits` | Generate a range: `--base HEAD~N` |
+| `last N commits` or `N commits` | `--base HEAD~N` |
 | `commit <sha>` | `--commit <sha>` |
 | `against main` / `vs main` / any branch name | `--base <branch>` |
 | `--uncommitted`, `--base ...`, `--commit ...` | Pass through as-is |
@@ -20,16 +20,10 @@ For `last N commits`, use `--base HEAD~N` so Codex reviews the cumulative diff o
 
 ## Run the review
 
-Build the command using the diff flag determined above.
+Invoke the wrapper script with the diff flag — it reads the user's provider/model/effort/api-key from the plugin config and builds the correct `codex exec` command:
 
-If `${user_config.provider}` is `openrouter`:
 ```
-OPENROUTER_API_KEY="${user_config.openrouter_api_key}" codex exec review -c 'model_provider="openrouter"' -c 'model="${user_config.model}"' -c 'model_reasoning_effort="${user_config.effort}"' <diff-flag>
-```
-
-If `${user_config.provider}` is `openai`:
-```
-codex exec review <diff-flag>
+node "${CLAUDE_PLUGIN_ROOT}/scripts/exec.mjs" review <diff-flag>
 ```
 
 When the review completes, act as a devil's advocate:

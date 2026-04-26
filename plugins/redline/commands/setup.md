@@ -2,22 +2,23 @@
 description: Configure Redline — set provider, API key, review model, and effort level
 allowed-tools: Bash
 ---
-Run the Redline setup wizard.
+Run the Redline setup wizard. All answers are persisted to the plugin data directory via `scripts/config.mjs`; the review/adversarial/rescue skills read from that store at runtime. **Do not** rely on `${user_config.*}` placeholders — they don't survive a setup skill.
 
 ## Step 1: Provider
 
 Run `codex login status` to check if Codex is already authenticated with OpenAI.
 
 - If authenticated: ask the user — "Use your OpenRouter account, or your OpenAI subscription?"
-  - **OpenRouter** (Recommended) → set provider to `openrouter`, continue to Step 2.
-  - **OpenAI subscription** → set provider to `openai`. Skip Steps 2–5 (Codex uses its default model). Save and finish.
-- If not authenticated: set provider to `openrouter`, continue to Step 2.
+  - **OpenRouter** (Recommended) → provider is `openrouter`, continue to Step 2.
+  - **OpenAI subscription** → provider is `openai`. Skip Steps 2–5 (Codex uses its default model). Jump to the Save step.
+- If not authenticated: provider is `openrouter`, continue to Step 2.
 
 ## Step 2: OpenRouter API key
 
 Only if provider is `openrouter`.
 
-If no OpenRouter API key is configured (check `OPENROUTER_API_KEY` env var), run OAuth login:
+If no OpenRouter API key is configured (check `OPENROUTER_API_KEY` env var and `node "${CLAUDE_PLUGIN_ROOT}/scripts/config.mjs" get openrouter_api_key`), run OAuth login — it writes the key to the plugin config automatically:
+
 ```
 node "${CLAUDE_PLUGIN_ROOT}/scripts/login.mjs"
 ```
@@ -49,4 +50,15 @@ Only if provider is `openrouter`. Ask which routing variant to append to the mod
 
 The final model value stored is `<model slug><variant suffix>` (e.g. `openai/gpt-5.4:nitro`).
 
-Save all preferences to the plugin config. These are used by /redline:review, /redline:adversarial, and /redline:rescue.
+## Save
+
+Persist the answers in one call. Pass only the fields you collected — omit `model` and `effort` for the `openai` path:
+
+```
+node "${CLAUDE_PLUGIN_ROOT}/scripts/config.mjs" set \
+  provider=<provider> \
+  model=<final-model-slug> \
+  effort=<effort>
+```
+
+These values are read by `/redline:review`, `/redline:adversarial`, and `/redline:rescue` via `scripts/exec.mjs` — no manual env setup required.
