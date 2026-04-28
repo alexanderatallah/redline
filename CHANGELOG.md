@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.1
+
+- **Default review model bumped to `~openai/gpt-latest`** — floating slug that tracks OpenAI's latest on OpenRouter, so new setups don't pin to a specific generation. Updated in `exec.mjs` defaults, `plugin.json` userConfig, `/redline:setup` Step 3, and README.
+
 ## 0.6.0
 
 - **Config is actually respected** — `/redline:review`, `/redline:adversarial`, and `/redline:rescue` now route through `scripts/exec.mjs`, which reads the user's provider/model/effort/API-key from the plugin data store. Previously they used `${user_config.*}` template placeholders that weren't writable from `/redline:setup` (only the `/plugin` UI), so setup answers were silently lost and `codex exec` ran with defaults or an empty API key.

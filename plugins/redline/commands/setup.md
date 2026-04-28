@@ -27,7 +27,7 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/login.mjs"
 
 Only if provider is `openrouter`. Present EXACTLY these options — do not suggest other models:
 
-1. `openai/gpt-5.4` (Recommended) — strong reasoning, good balance of speed and quality
+1. `~openai/gpt-latest` (Recommended) — strong reasoning, good balance of speed and quality
 2. `openrouter/auto` — automatically picks the best model for the task
 3. Custom — paste any OpenRouter model slug (e.g. `google/gemini-3.1-pro-preview`, `openrouter/free`). Browse available models at https://openrouter.ai/models
 
@@ -48,7 +48,7 @@ Only if provider is `openrouter`. Ask which routing variant to append to the mod
 2. `:floor` — cheapest routing
 3. Standard — no suffix
 
-The final model value stored is `<model slug><variant suffix>` (e.g. `openai/gpt-5.4:nitro`).
+The final model value stored is `<model slug><variant suffix>` (e.g. `~openai/gpt-latest:nitro`).
 
 ## Save
 

@@ -79,7 +79,7 @@ When you're stuck — hand the problem to Codex. Describe what you're working on
 During `/redline:setup`, configure:
 
 - **Provider** — use your existing OpenAI subscription, or route through OpenRouter for model choice
-- **Model** (OpenRouter only) — `openai/gpt-5.4` (default), `openrouter/auto`, or any [OpenRouter model slug](https://openrouter.ai/models)
+- **Model** (OpenRouter only) — `~openai/gpt-latest` (default), `openrouter/auto`, or any [OpenRouter model slug](https://openrouter.ai/models)
 - **Effort** (OpenRouter only) — reasoning effort: minimal, low, medium, high (default: medium)
 - **Provider variant** (OpenRouter only) — `:nitro` (fastest, default), `:floor` (cheapest), or standard routing
 

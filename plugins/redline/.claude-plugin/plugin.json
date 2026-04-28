@@ -1,6 +1,6 @@
 {
   "name": "redline",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Automatic code review, adversarial review, and rescue via Codex.",
   "author": { "name": "Alex Atallah" },
   "userConfig": {
@@ -12,9 +12,9 @@
     },
     "model": {
       "title": "Review model",
-      "description": "Review model (default: openai/gpt-5.4)",
+      "description": "Review model (default: ~openai/gpt-latest)",
       "type": "string",
-      "default": "openai/gpt-5.4:nitro"
+      "default": "~openai/gpt-latest:nitro"
     },
     "effort": {
       "title": "Reasoning effort",

@@ -19,7 +19,7 @@ import { ensureCodexConfig } from "./lib/codex.mjs";
 
 const DEFAULTS = {
   provider: "openrouter",
-  model: "openai/gpt-5.4:nitro",
+  model: "~openai/gpt-latest:nitro",
   effort: "medium",
 };
 
