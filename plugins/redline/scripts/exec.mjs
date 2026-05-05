@@ -6,31 +6,13 @@
  *   exec.mjs review <diff-flag>...    -> codex exec review [-c flags] <diff-flag>
  *   exec.mjs rescue <task>            -> codex exec [-c flags] <task>
  *
- * Resolves provider/model/effort from (in order):
- *   1. $CLAUDE_PLUGIN_DATA/config.json (written by /redline:setup — most recent explicit action)
- *   2. $CLAUDE_PLUGIN_OPTION_* env vars (Claude Code userConfig — plugin UI)
- *   3. plugin.json defaults
+ * Resolves provider/model/effort from shared Redline config helpers.
  * API-key resolution is delegated to resolveApiKey() in lib/config.mjs.
  */
 
 import { spawn } from "node:child_process";
-import { loadConfig, resolveApiKey } from "./lib/config.mjs";
+import { resolveApiKey, resolveCodexReviewerConfig } from "./lib/config.mjs";
 import { ensureCodexConfig } from "./lib/codex.mjs";
-
-const DEFAULTS = {
-  provider: "openrouter",
-  model: "~openai/gpt-latest:nitro",
-  effort: "medium",
-};
-
-function resolve(field, storedConfig) {
-  const envKey = `CLAUDE_PLUGIN_OPTION_${field.toUpperCase()}`;
-  return (
-    storedConfig[field] ||
-    process.env[envKey] ||
-    DEFAULTS[field]
-  );
-}
 
 function main() {
   const [mode, ...rest] = process.argv.slice(2);
@@ -43,10 +25,7 @@ function main() {
     process.exit(2);
   }
 
-  const stored = loadConfig();
-  const provider = resolve("provider", stored);
-  const model = resolve("model", stored);
-  const effort = resolve("effort", stored);
+  const { provider, model, effort } = resolveCodexReviewerConfig();
 
   const args = mode === "review" ? ["exec", "review"] : ["exec"];
   const env = { ...process.env };

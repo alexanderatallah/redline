@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.0
+
+- **Codex plugin surface** — added `plugins/redline/.codex-plugin/plugin.json`, a Codex-specific Stop hook at `hooks/codex-hooks.json`, and Codex skills for check, review, adversarial review, rescue, and setup.
+- **Claude reviewer for Codex users** — added `scripts/claude.mjs`, which invokes Claude Code read-only for standard review, adversarial review, or rescue help. Codex remains the primary agent and decides whether to apply fixes.
+- **Shared reviewer config** — existing Codex reviewer config still supports OpenAI subscription or OpenRouter. New Claude reviewer config supports Claude subscription or OpenRouter, with OpenRouter setting `ANTHROPIC_BASE_URL=https://openrouter.ai/api`, `ANTHROPIC_AUTH_TOKEN`, and a blank `ANTHROPIC_API_KEY`.
+- **Codex Stop hook parity** — the Codex hook mirrors the Claude hook's fast nudge behavior: skip nested hooks and clean working trees, otherwise prompt Codex to use `$redline-check`.
+
 ## 0.6.1
 
 - **Default review model bumped to `~openai/gpt-latest`** — floating slug that tracks OpenAI's latest on OpenRouter, so new setups don't pin to a specific generation. Updated in `exec.mjs` defaults, `plugin.json` userConfig, `/redline:setup` Step 3, and README.
