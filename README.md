@@ -56,6 +56,8 @@ claude --plugin-dir ./plugins/redline
 
 For Codex plugin development, use the repo-local plugin at `./plugins/redline`; its Codex manifest is `plugins/redline/.codex-plugin/plugin.json` and its hook file is explicitly `plugins/redline/hooks/codex-hooks.json`.
 
+Internally, shared config, diff targeting, git context, and prompt building live in `scripts/core/`. Claude Code and Codex CLI specifics live in `scripts/adapters/`, while the top-level scripts remain stable plugin entrypoints.
+
 ## Commands
 
 | Command | Description |

@@ -20,7 +20,7 @@ import {
   resolveClaudeReviewerConfig,
   resolveCodexReviewerConfig,
   saveConfig,
-} from "./lib/config.mjs";
+} from "./core/config.mjs";
 
 const ALLOWED_KEYS = new Set([
   "provider",

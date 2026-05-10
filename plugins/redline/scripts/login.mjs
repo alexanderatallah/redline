@@ -9,7 +9,7 @@ import { createServer } from "node:http";
 import { execSync } from "node:child_process";
 import { writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import { loadConfig, saveConfig } from "./lib/config.mjs";
+import { loadConfig, saveConfig } from "./core/config.mjs";
 
 async function generatePKCE() {
   const array = new Uint8Array(32);

@@ -9,7 +9,7 @@ import {
   resolveClaudeReviewerConfig,
   resolveCodexReviewerConfig,
   saveConfig,
-} from "../plugins/redline/scripts/lib/config.mjs";
+} from "../plugins/redline/scripts/core/config.mjs";
 
 function withConfigPath(fn) {
   const dir = mkdtempSync(join(tmpdir(), "redline-config-"));

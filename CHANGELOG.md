@@ -6,6 +6,7 @@
 - **Claude reviewer for Codex users** — added `scripts/claude.mjs`, which invokes Claude Code read-only for standard review, adversarial review, or rescue help. Codex remains the primary agent and decides whether to apply fixes.
 - **Shared reviewer config** — existing Codex reviewer config still supports OpenAI subscription or OpenRouter. New Claude reviewer config supports Claude subscription or OpenRouter, with OpenRouter setting `ANTHROPIC_BASE_URL=https://openrouter.ai/api`, `ANTHROPIC_AUTH_TOKEN`, and a blank `ANTHROPIC_API_KEY`.
 - **Codex Stop hook parity** — the Codex hook mirrors the Claude hook's fast nudge behavior: skip nested hooks and clean working trees, otherwise prompt Codex to use `$redline-check`.
+- **Thin adapter split** — moved shared config, diff targeting, git context, and prompt construction into `scripts/core/`, with Claude Code and Codex CLI behavior isolated under `scripts/adapters/` while preserving existing entrypoints.
 
 ## 0.6.1
 
