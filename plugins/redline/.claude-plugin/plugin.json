@@ -1,7 +1,7 @@
 {
   "name": "redline",
-  "version": "0.6.1",
-  "description": "Automatic code review, adversarial review, and rescue via Codex.",
+  "version": "0.7.0",
+  "description": "Automatic code review, adversarial review, and rescue between Claude Code and Codex.",
   "author": { "name": "Alex Atallah" },
   "userConfig": {
     "openrouter_api_key": {
@@ -27,6 +27,24 @@
       "description": "openai (use existing Codex auth) or openrouter (route through OpenRouter for model choice)",
       "type": "string",
       "default": "openrouter"
+    },
+    "claude_openrouter_api_key": {
+      "title": "Claude reviewer OpenRouter API key",
+      "description": "OpenRouter API key for Codex users invoking Claude reviews (or set OPENROUTER_API_KEY)",
+      "type": "string",
+      "sensitive": true
+    },
+    "claude_model": {
+      "title": "Claude reviewer model",
+      "description": "Claude reviewer model (subscription default: opus; OpenRouter default: anthropic/claude-opus-4.7)",
+      "type": "string",
+      "default": "opus"
+    },
+    "claude_provider": {
+      "title": "Claude reviewer provider",
+      "description": "subscription (use Claude Code auth) or openrouter (route Claude Code through OpenRouter)",
+      "type": "string",
+      "default": "subscription"
     }
   }
 }

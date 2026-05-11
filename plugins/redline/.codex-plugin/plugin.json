@@ -1,0 +1,41 @@
+{
+  "name": "redline",
+  "version": "0.7.0",
+  "description": "Automatic code review, adversarial review, and rescue between Codex and Claude Code.",
+  "author": {
+    "name": "Alex Atallah",
+    "url": "https://github.com/alexanderatallah"
+  },
+  "homepage": "https://github.com/alexanderatallah/redline",
+  "repository": "https://github.com/alexanderatallah/redline",
+  "license": "MIT",
+  "keywords": [
+    "code-review",
+    "claude",
+    "codex",
+    "openrouter"
+  ],
+  "skills": "./skills/",
+  "hooks": "./hooks/codex-hooks.json",
+  "interface": {
+    "displayName": "Redline",
+    "shortDescription": "Claude Opus reviews for Codex changes",
+    "longDescription": "Redline gives Codex users a symmetric review loop: a Stop hook nudges Codex when uncommitted changes exist, and Codex can ask Claude Code for standard review, adversarial review, or rescue help while keeping Codex in charge of any fixes.",
+    "developerName": "Alex Atallah",
+    "category": "Coding",
+    "capabilities": [
+      "Interactive",
+      "Read"
+    ],
+    "websiteURL": "https://github.com/alexanderatallah/redline",
+    "privacyPolicyURL": "https://github.com/alexanderatallah/redline",
+    "termsOfServiceURL": "https://github.com/alexanderatallah/redline",
+    "defaultPrompt": [
+      "Review my uncommitted changes with Claude",
+      "Pressure-test this design with Claude",
+      "Ask Claude for rescue help on this bug"
+    ],
+    "brandColor": "#C1121F",
+    "screenshots": []
+  }
+}
