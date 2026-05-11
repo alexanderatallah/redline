@@ -37,7 +37,7 @@ export function codexStopHookDecision(event) {
   return {
     decision: "block",
     reason:
-      "Uncommitted changes are present. Use $redline-check to choose $redline-review, $redline-adversarial, $redline-rescue, or skip.",
+      "Uncommitted changes are present. Use $redline:check to choose $redline:review, $redline:adversarial, $redline:rescue, or skip.",
   };
 }
 

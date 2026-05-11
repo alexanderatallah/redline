@@ -13,11 +13,13 @@ export function parseReviewTarget(parts) {
     return { kind: "uncommitted", label: "uncommitted changes" };
   }
 
-  if (parts[0] === "--base" && parts[1]) {
+  if (parts[0] === "--base") {
+    if (!parts[1]) throw new Error("review target --base requires a branch or ref");
     return { kind: "base", base: parts[1], label: `changes against ${parts[1]}` };
   }
 
-  if (parts[0] === "--commit" && parts[1]) {
+  if (parts[0] === "--commit") {
+    if (!parts[1]) throw new Error("review target --commit requires a commit SHA");
     return { kind: "commit", commit: parts[1], label: `commit ${parts[1]}` };
   }
 

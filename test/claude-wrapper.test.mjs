@@ -10,6 +10,7 @@ import {
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import test from "node:test";
+import { extractClaudeStreamText } from "../plugins/redline/scripts/adapters/claude-code/reviewer.mjs";
 
 const repoRoot = resolve(import.meta.dirname, "..");
 const wrapperScript = join(repoRoot, "plugins/redline/scripts/claude.mjs");
@@ -62,7 +63,20 @@ process.stdin.on("end", () => {
     },
     stdin
   }, null, 2));
-  console.log("fake claude output");
+  console.log(JSON.stringify({
+    type: "assistant",
+    message: {
+      content: [
+        { type: "thinking", thinking: "hidden scratchpad" },
+        { type: "text", text: "fake claude output" }
+      ]
+    }
+  }));
+  console.log(JSON.stringify({
+    type: "result",
+    subtype: "success",
+    result: "duplicate final result"
+  }));
 });
 `);
   chmodSync(fake, 0o755);
@@ -104,8 +118,14 @@ test("Claude wrapper uses subscription auth by default and streams output", () =
 
   const payload = JSON.parse(readFileSync(fakeOut, "utf8"));
   assert.match(result.stdout, /fake claude output/);
+  assert.doesNotMatch(result.stdout, /hidden scratchpad/);
+  assert.doesNotMatch(result.stdout, /duplicate final result/);
   assert.ok(!payload.args.includes("--bare"));
   assert.equal(payload.args[payload.args.indexOf("--model") + 1], "opus");
+  assert.equal(payload.args[payload.args.indexOf("--output-format") + 1], "stream-json");
+  assert.ok(payload.args.includes("--verbose"));
+  assert.equal(payload.args[payload.args.indexOf("--setting-sources") + 1], "local");
+  assert.ok(payload.args.includes("--disable-slash-commands"));
   assert.equal(payload.env.ANTHROPIC_BASE_URL, null);
   assert.match(payload.stdin, /standard code review/);
   assert.match(payload.stdin, /Diff:/);
@@ -159,4 +179,42 @@ test("Claude wrapper rescue prompt is read-only and includes the task", () => {
   assert.match(payload.stdin, /Do not modify files/);
   assert.match(payload.stdin, /debug the parser failure/);
   assert.match(payload.stdin, /suggested patches/);
+});
+
+test("Claude wrapper reports malformed review targets before spawning Claude", () => {
+  const dir = initGitRepo();
+  const temp = mkdtempSync(join(tmpdir(), "redline-fake-"));
+  const fakeOut = join(temp, "out.json");
+  const fakeClaude = createFakeClaude(temp);
+  const configPath = join(temp, "config.json");
+  writeFileSync(configPath, JSON.stringify({
+    claude_provider: "subscription",
+    claude_model: "opus",
+  }));
+
+  const result = spawnSync("node", [wrapperScript, "review", "--base"], {
+    cwd: dir,
+    encoding: "utf8",
+    env: envFor(fakeClaude, configPath, fakeOut),
+  });
+
+  assert.equal(result.status, 2);
+  assert.match(result.stderr, /--base requires a branch or ref/);
+});
+
+test("Claude stream extraction ignores thinking and returns assistant text", () => {
+  assert.equal(extractClaudeStreamText(JSON.stringify({
+    type: "assistant",
+    message: {
+      content: [
+        { type: "thinking", thinking: "do not show" },
+        { type: "text", text: "visible review" },
+      ],
+    },
+  })), "visible review");
+
+  assert.equal(extractClaudeStreamText(JSON.stringify({
+    type: "result",
+    result: "fallback result",
+  })), "fallback result");
 });

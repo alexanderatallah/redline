@@ -1,11 +1,11 @@
 ---
-name: redline-setup
-description: Configure Redline for Codex users by choosing how Claude Code reviews should run: Claude subscription or OpenRouter with an Opus model.
+name: setup
+description: "Configure Redline for Codex users by choosing how Claude Code reviews should run: Claude subscription or OpenRouter with an Opus model."
 ---
 
 # Redline Setup
 
-Configure the Claude reviewer used by `$redline-review`, `$redline-adversarial`, and `$redline-rescue`.
+Configure the Claude reviewer used by `$redline:review`, `$redline:adversarial`, and `$redline:rescue`.
 
 Resolve the Redline plugin root first. It is the directory two levels above this `SKILL.md`; in this repo checkout it is `plugins/redline`.
 

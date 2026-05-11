@@ -1,5 +1,5 @@
 ---
-name: redline-adversarial
+name: adversarial
 description: Ask Claude Code to run a read-only adversarial review that challenges design choices, hidden assumptions, failure modes, and trade-offs in Codex changes.
 ---
 
@@ -13,7 +13,7 @@ Resolve the Redline plugin root first. It is the directory two levels above this
 node "<plugin-root>/scripts/claude.mjs" adversarial <target>
 ```
 
-Target handling matches `$redline-review`:
+Target handling matches `$redline:review`:
 
 - No target: reviews uncommitted changes.
 - `last N commits` or `N commits`: reviews cumulative changes since `HEAD~N`.

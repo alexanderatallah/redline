@@ -57,7 +57,7 @@ test("Codex Stop hook exits silently when there is no git diff", () => {
   assert.equal(result.stdout, "");
 });
 
-test("Codex Stop hook blocks with redline-check prompt when a git diff exists", () => {
+test("Codex Stop hook blocks with redline:check prompt when a git diff exists", () => {
   const dir = initGitRepo();
   appendFileSync(join(dir, "file.txt"), "two\n");
 
@@ -68,6 +68,6 @@ test("Codex Stop hook blocks with redline-check prompt when a git diff exists", 
 
   const payload = JSON.parse(result.stdout);
   assert.equal(payload.decision, "block");
-  assert.match(payload.reason, /\$redline-check/);
-  assert.match(payload.reason, /\$redline-review/);
+  assert.match(payload.reason, /\$redline:check/);
+  assert.match(payload.reason, /\$redline:review/);
 });

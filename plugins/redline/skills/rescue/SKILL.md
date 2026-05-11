@@ -1,5 +1,5 @@
 ---
-name: redline-rescue
+name: rescue
 description: Ask Claude Code for read-only investigation help when Codex is stuck, looping, or needs another model to diagnose a problem.
 ---
 

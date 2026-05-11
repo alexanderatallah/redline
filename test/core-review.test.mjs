@@ -38,6 +38,20 @@ function initGitRepo() {
   return dir;
 }
 
+function commitAll(dir, message) {
+  run("git", ["add", "."], { cwd: dir });
+  run("git", [
+    "-c",
+    "user.email=test@example.com",
+    "-c",
+    "user.name=Redline Test",
+    "commit",
+    "-m",
+    message,
+  ], { cwd: dir });
+  return run("git", ["rev-parse", "HEAD"], { cwd: dir }).stdout.trim();
+}
+
 test("parseReviewTarget handles supported target forms", () => {
   assert.deepEqual(parseReviewTarget([]), {
     kind: "uncommitted",
@@ -63,6 +77,8 @@ test("parseReviewTarget handles supported target forms", () => {
     base: "release",
     label: "changes against release",
   });
+  assert.throws(() => parseReviewTarget(["--base"]), /requires a branch or ref/);
+  assert.throws(() => parseReviewTarget(["--commit"]), /requires a commit SHA/);
 });
 
 test("collectReviewContext reads uncommitted diff from target cwd", () => {
@@ -72,6 +88,19 @@ test("collectReviewContext reads uncommitted diff from target cwd", () => {
   assert.match(context.status, /M file\.txt/);
   assert.match(context.stat, /file\.txt/);
   assert.match(context.diff, /\+two/);
+});
+
+test("collectReviewContext reads base and commit targets", () => {
+  const dir = initGitRepo();
+  const latest = commitAll(dir, "second");
+
+  const baseContext = collectReviewContext(parseReviewTarget(["--base", "HEAD~1"]), { cwd: dir });
+  assert.match(baseContext.stat, /file\.txt/);
+  assert.match(baseContext.diff, /\+two/);
+
+  const commitContext = collectReviewContext(parseReviewTarget(["--commit", latest]), { cwd: dir });
+  assert.match(commitContext.stat, /file\.txt/);
+  assert.match(commitContext.diff, /\+two/);
 });
 
 test("buildReviewerPrompt selects review modes and includes context", () => {

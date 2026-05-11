@@ -1,5 +1,5 @@
 ---
-name: redline-review
+name: review
 description: Ask Claude Code to run a read-only standard code review of Codex changes. Defaults to uncommitted changes and supports targets like last N commits, against main, or commit SHA.
 ---
 

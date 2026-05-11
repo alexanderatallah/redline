@@ -30,7 +30,7 @@ Claude Code Stop hook or Codex Stop hook (fires after each response)
 
 On Claude Code, Redline exposes `/redline:review`, `/redline:adversarial`, `/redline:rescue`, and `/redline:setup`.
 
-On Codex, Redline exposes `$redline-check`, `$redline-review`, `$redline-adversarial`, `$redline-rescue`, and `$redline-setup`. The Codex Stop hook nudges Codex to use `$redline-check` when uncommitted changes exist.
+On Codex, Redline exposes `$redline:check`, `$redline:review`, `$redline:adversarial`, `$redline:rescue`, and `$redline:setup`. The Codex Stop hook nudges Codex to use `$redline:check` when uncommitted changes exist.
 
 Reviews happen **automatically** — no manual invocation needed. You can also run any command directly at any time.
 
@@ -42,11 +42,22 @@ Reviews happen **automatically** — no manual invocation needed. You can also r
 
 Then run `/redline:setup` to configure your provider, model, and effort level.
 
-For Codex local development, install the local plugin at `./plugins/redline` after confirming `codex_hooks` is enabled:
+For Codex local development, register this repo as a local marketplace, then install Redline through Codex's plugin UI:
 
 ```bash
-codex features list
+codex plugin marketplace add /path/to/redline
 ```
+
+Then open Codex, run `/plugins`, open the `Redline` marketplace, select `Redline`, and choose `Install plugin`. Adding the marketplace only makes Redline available; `/plugins` is the official install flow.
+
+For the Stop hook, enable plugin hooks:
+
+```toml
+[features]
+plugin_hooks = true
+```
+
+After installation, run `/hooks` and approve the Redline Stop hook once. Then restart or open a new Codex session and run `$redline:setup`.
 
 ### Development
 
@@ -71,11 +82,11 @@ Internally, shared config, diff targeting, git context, and prompt building live
 
 | Skill | Description |
 |-------|-------------|
-| `$redline-setup` | Configure Claude reviewer provider and model |
-| `$redline-check` | Decide whether to review, adversarial-review, rescue, or skip |
-| `$redline-review [target]` | Ask Claude Code for a read-only standard review |
-| `$redline-adversarial [target]` | Ask Claude Code for a read-only design pressure-test |
-| `$redline-rescue <task>` | Ask Claude Code for read-only investigation help |
+| `$redline:setup` | Configure Claude reviewer provider and model |
+| `$redline:check` | Decide whether to review, adversarial-review, rescue, or skip |
+| `$redline:review [target]` | Ask Claude Code for a read-only standard review |
+| `$redline:adversarial [target]` | Ask Claude Code for a read-only design pressure-test |
+| `$redline:rescue <task>` | Ask Claude Code for read-only investigation help |
 
 ### `/redline:review [target]`
 
@@ -105,7 +116,7 @@ During `/redline:setup`, configure:
 - **Effort** (OpenRouter only) — reasoning effort: minimal, low, medium, high (default: medium)
 - **Provider variant** (OpenRouter only) — `:nitro` (fastest, default), `:floor` (cheapest), or standard routing
 
-During `$redline-setup`, configure the Claude reviewer for Codex:
+During `$redline:setup`, configure the Claude reviewer for Codex:
 
 - **Claude subscription** — uses existing `claude auth login` credentials and defaults to `opus`
 - **OpenRouter** — sets Claude Code's Anthropic-compatible gateway env vars and defaults to `anthropic/claude-opus-4.7`
@@ -126,7 +137,7 @@ export OPENROUTER_API_KEY=sk-or-...
 /redline:setup
 ```
 
-For Codex users running Claude reviews through OpenRouter, `$redline-setup` reuses `OPENROUTER_API_KEY` or stores `claude_openrouter_api_key` in Redline config.
+For Codex users running Claude reviews through OpenRouter, `$redline:setup` reuses `OPENROUTER_API_KEY` or stores `claude_openrouter_api_key` in Redline config.
 
 ## Customization
 
